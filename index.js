@@ -10,6 +10,21 @@ app.use(cors());
 app.use(express.json());
 
 // custom middlewares
+const verifyToken = (req, res, next) => {
+  const token = req.headers.authorization;
+  if (!token) {
+    console.log('token nai');
+    return res.status(401).send({ message: 'Forbidden access' });
+  }
+  jwt.verify(token, process.env.SECRET_ACCESS_TOKEN, (err, decoded) => {
+    if (err) {
+      console.log('err token nai');
+      return res.status(401).send({ message: 'Forbidden access' });
+    }
+    req.decoded = decoded;
+    next();
+  });
+};
 
 const { MongoClient, ServerApiVersion } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.2fh4pkj.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
