@@ -45,6 +45,7 @@ async function run() {
 
     const apartmentCollection = client.db('skyViewDB').collection('apartments');
     const userCollection = client.db('skyViewDB').collection('users');
+    const agreementCollection = client.db('skyViewDB').collection('agreements');
 
     // jwt related api
 
@@ -85,8 +86,14 @@ async function run() {
       res.send({ userRole });
     });
 
-    app.get('/apartment', verifyToken, async (req, res) => {
+    app.get('/apartment', async (req, res) => {
       const result = await apartmentCollection.find().toArray();
+      res.send(result);
+    });
+
+    app.post('/agreement', async (req, res) => {
+      const data = req.body;
+      const result = await agreementCollection.insertOne(data);
       res.send(result);
     });
 
