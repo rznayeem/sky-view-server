@@ -91,8 +91,22 @@ async function run() {
       res.send(result);
     });
 
+    app.get('/agreement', async (req, res) => {
+      const result = await agreementCollection.find().toArray();
+      res.send(result);
+    });
+
     app.post('/agreement', async (req, res) => {
       const data = req.body;
+      const existingAgreement = await agreementCollection.findOne({
+        email: data.email,
+      });
+      if (existingAgreement) {
+        return res.send({
+          message: 'Already applied an apartment',
+          insertedId: null,
+        });
+      }
       const result = await agreementCollection.insertOne(data);
       res.send(result);
     });
