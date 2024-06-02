@@ -69,6 +69,22 @@ async function run() {
       res.send(result);
     });
 
+    app.get('/users/role/:email', verifyToken, async (req, res) => {
+      const email = req.params.email;
+      if (email !== req.decoded.email) {
+        return res.status(403).send({ message: 'Unauthorized access' });
+      }
+      const user = await userCollection.findOne({ email });
+      let userRole = '';
+      if (user?.role === 'admin') {
+        userRole = 'admin';
+      }
+      if (user?.role === 'member') {
+        userRole = 'member';
+      }
+      res.send({ userRole });
+    });
+
     app.get('/apartment', verifyToken, async (req, res) => {
       const result = await apartmentCollection.find().toArray();
       res.send(result);
