@@ -1,12 +1,15 @@
 const express = require('express');
 const cors = require('cors');
 const app = express();
+const jwt = require('jsonwebtoken');
 require('dotenv').config();
 const port = process.env.PORT || 5000;
 
 // middlewares
 app.use(cors());
 app.use(express.json());
+
+// custom middlewares
 
 const { MongoClient, ServerApiVersion } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.2fh4pkj.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
@@ -28,6 +31,18 @@ async function run() {
     const apartmentCollection = client.db('skyViewDB').collection('apartments');
     const userCollection = client.db('skyViewDB').collection('users');
 
+    // jwt related api
+
+    app.post('/jwt', async (req, res) => {
+      const user = req.body;
+      const token = jwt.sign(user, process.env.SECRET_ACCESS_TOKEN, {
+        expiresIn: '24h',
+      });
+      res.send({ token });
+    });
+
+    // user related api
+
     app.post('/users', async (req, res) => {
       const user = req.body;
       const query = { email: user.email };
@@ -39,7 +54,7 @@ async function run() {
       res.send(result);
     });
 
-    app.get('/apartment', async (req, res) => {
+    app.get('/apartment', verifyToken, async (req, res) => {
       const result = await apartmentCollection.find().toArray();
       res.send(result);
     });
