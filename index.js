@@ -46,6 +46,9 @@ async function run() {
     const apartmentCollection = client.db('skyViewDB').collection('apartments');
     const userCollection = client.db('skyViewDB').collection('users');
     const agreementCollection = client.db('skyViewDB').collection('agreements');
+    const announcementCollection = client
+      .db('skyViewDB')
+      .collection('announcements');
 
     // jwt related api
 
@@ -173,6 +176,12 @@ async function run() {
           apartmentUpdatedDoc
         );
       }
+      res.send(result);
+    });
+
+    app.post('/announcement', async (req, res) => {
+      const data = req.body;
+      const result = await announcementCollection.insertOne(data);
       res.send(result);
     });
 
