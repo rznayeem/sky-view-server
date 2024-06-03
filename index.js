@@ -75,6 +75,32 @@ async function run() {
       res.send(result);
     });
 
+    app.patch('/users/:email', async (req, res) => {
+      const email = req.params.email;
+      const filter = { email };
+      const apartment = await agreementCollection.findOne(filter);
+      if (apartment) {
+        const apartmentId = apartment.apartmentId;
+        const filterApartment = { _id: new ObjectId(apartmentId) };
+        const apartmentUpdatedDoc = {
+          $set: {
+            status: 'available',
+          },
+        };
+        const apartmentResult = await apartmentCollection.updateOne(
+          filterApartment,
+          apartmentUpdatedDoc
+        );
+      }
+      const updatedDoc = {
+        $set: {
+          role: '',
+        },
+      };
+      const result = await userCollection.updateOne(filter, updatedDoc);
+      res.send(result);
+    });
+
     app.get('/users/role/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
       if (email !== req.decoded.email) {
