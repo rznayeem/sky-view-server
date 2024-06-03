@@ -26,7 +26,7 @@ const verifyToken = (req, res, next) => {
   });
 };
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.2fh4pkj.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -70,6 +70,11 @@ async function run() {
       res.send(result);
     });
 
+    app.get('/members', async (req, res) => {
+      const result = await userCollection.find({ role: 'member' }).toArray();
+      res.send(result);
+    });
+
     app.get('/users/role/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
       if (email !== req.decoded.email) {
@@ -108,6 +113,40 @@ async function run() {
         });
       }
       const result = await agreementCollection.insertOne(data);
+      res.send(result);
+    });
+
+    app.patch('/agreement/checking/:id', async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          status: 'checked',
+        },
+      };
+      const result = await agreementCollection.updateOne(filter, updatedDoc);
+      if (req.query.check === 'approve') {
+        const filterUser = { email: req.query.email };
+        const filterApartment = { _id: new ObjectId(req.query.apartmentId) };
+        const userUpdatedDoc = {
+          $set: {
+            role: 'member',
+          },
+        };
+        const apartmentUpdatedDoc = {
+          $set: {
+            status: 'unavailable',
+          },
+        };
+        const userResult = await userCollection.updateOne(
+          filterUser,
+          userUpdatedDoc
+        );
+        const apartmentResult = await apartmentCollection.updateOne(
+          filterApartment,
+          apartmentUpdatedDoc
+        );
+      }
       res.send(result);
     });
 
