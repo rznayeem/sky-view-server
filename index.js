@@ -74,12 +74,12 @@ async function run() {
       res.send(result);
     });
 
-    app.get('/members', async (req, res) => {
+    app.get('/members', verifyToken, async (req, res) => {
       const result = await userCollection.find({ role: 'member' }).toArray();
       res.send(result);
     });
 
-    app.patch('/users/:email', async (req, res) => {
+    app.patch('/users/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
       const filter = { email };
       const apartment = await agreementCollection.findOne(filter);
@@ -128,12 +128,18 @@ async function run() {
       res.send(result);
     });
 
-    app.get('/agreement', async (req, res) => {
+    app.get('/agreement', verifyToken, async (req, res) => {
       const result = await agreementCollection.find().toArray();
       res.send(result);
     });
+    app.get('/agreement/:email', verifyToken, async (req, res) => {
+      const email = req.params.email;
+      console.log(email);
+      const result = await agreementCollection.findOne({ email });
+      res.send(result);
+    });
 
-    app.post('/agreement', async (req, res) => {
+    app.post('/agreement', verifyToken, async (req, res) => {
       const data = req.body;
       const existingAgreement = await agreementCollection.findOne({
         email: data.email,
@@ -148,11 +154,13 @@ async function run() {
       res.send(result);
     });
 
-    app.patch('/agreement/checking/:id', async (req, res) => {
+    app.patch('/agreement/checking/:id', verifyToken, async (req, res) => {
       const id = req.params.id;
+      const accept_date = req.body;
       const filter = { _id: new ObjectId(id) };
       const updatedDoc = {
         $set: {
+          accept_date: accept_date.currentDate,
           status: 'checked',
         },
       };
@@ -184,7 +192,7 @@ async function run() {
 
     // announcement related api
 
-    app.post('/announcement', async (req, res) => {
+    app.post('/announcement', verifyToken, async (req, res) => {
       const data = req.body;
       const result = await announcementCollection.insertOne(data);
       res.send(result);
@@ -197,7 +205,7 @@ async function run() {
       res.send(result);
     });
 
-    app.post('/coupons', async (req, res) => {
+    app.post('/coupons', verifyToken, async (req, res) => {
       const data = req.body;
       const result = await couponCollection.insertOne(data);
       res.send(result);
