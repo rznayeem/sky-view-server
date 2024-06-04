@@ -46,6 +46,7 @@ async function run() {
     const apartmentCollection = client.db('skyViewDB').collection('apartments');
     const userCollection = client.db('skyViewDB').collection('users');
     const agreementCollection = client.db('skyViewDB').collection('agreements');
+    const couponCollection = client.db('skyViewDB').collection('coupons');
     const announcementCollection = client
       .db('skyViewDB')
       .collection('announcements');
@@ -60,7 +61,7 @@ async function run() {
       res.send({ token });
     });
 
-    // user related api
+    // users related api
 
     app.post('/users', async (req, res) => {
       const user = req.body;
@@ -119,6 +120,8 @@ async function run() {
       }
       res.send({ userRole });
     });
+
+    // apartment related api
 
     app.get('/apartment', async (req, res) => {
       const result = await apartmentCollection.find().toArray();
@@ -179,9 +182,18 @@ async function run() {
       res.send(result);
     });
 
+    // announcement related api
+
     app.post('/announcement', async (req, res) => {
       const data = req.body;
       const result = await announcementCollection.insertOne(data);
+      res.send(result);
+    });
+
+    // coupon related api
+
+    app.get('/coupons', async (req, res) => {
+      const result = await couponCollection.find().toArray();
       res.send(result);
     });
 
