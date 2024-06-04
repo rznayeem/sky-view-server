@@ -198,6 +198,11 @@ async function run() {
       res.send(result);
     });
 
+    app.get('/announcement', verifyToken, async (req, res) => {
+      const result = await announcementCollection.find().toArray();
+      res.send(result);
+    });
+
     // coupon related api
 
     app.get('/coupons', async (req, res) => {
