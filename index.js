@@ -1,12 +1,17 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const app = express();
 const jwt = require('jsonwebtoken');
-require('dotenv').config();
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const port = process.env.PORT || 5000;
 
 // middlewares
-app.use(cors());
+app.use(
+  cors({
+    origin: ['http://localhost:5173', 'http://localhost:5000'],
+  })
+);
 app.use(express.json());
 
 // custom middlewares
@@ -47,6 +52,7 @@ async function run() {
     const userCollection = client.db('skyViewDB').collection('users');
     const agreementCollection = client.db('skyViewDB').collection('agreements');
     const couponCollection = client.db('skyViewDB').collection('coupons');
+    const paymentCollection = client.db('skyViewDB').collection('payments');
     const announcementCollection = client
       .db('skyViewDB')
       .collection('announcements');
@@ -132,9 +138,9 @@ async function run() {
       const result = await agreementCollection.find().toArray();
       res.send(result);
     });
+
     app.get('/agreement/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
-      console.log(email);
       const result = await agreementCollection.findOne({ email });
       res.send(result);
     });
@@ -213,6 +219,34 @@ async function run() {
     app.post('/coupons', verifyToken, async (req, res) => {
       const data = req.body;
       const result = await couponCollection.insertOne(data);
+      res.send(result);
+    });
+
+    // payment intend
+
+    app.post('/create-payment-intent', verifyToken, async (req, res) => {
+      const { price } = req.body;
+      console.log('server', price);
+      const amount = parseInt(price * 100);
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: 'usd',
+        payment_method_types: ['card'],
+      });
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+    });
+
+    app.get('/payments/:email', verifyToken, async (req, res) => {
+      const email = req.params.email;
+      const result = await paymentCollection.find({ email }).toArray();
+      res.send(result);
+    });
+
+    app.post('/payments', async (req, res) => {
+      const paymentData = req.body;
+      const result = await paymentCollection.insertOne(paymentData);
       res.send(result);
     });
 
