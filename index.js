@@ -80,6 +80,11 @@ async function run() {
       res.send(result);
     });
 
+    app.get('/users', async (req, res) => {
+      const result = await userCollection.find().toArray();
+      res.send(result);
+    });
+
     app.get('/members', verifyToken, async (req, res) => {
       const result = await userCollection.find({ role: 'member' }).toArray();
       res.send(result);
@@ -193,6 +198,13 @@ async function run() {
           apartmentUpdatedDoc
         );
       }
+      res.send(result);
+    });
+
+    app.get('/apartmentChecked', async (req, res) => {
+      const result = await agreementCollection
+        .find({ status: 'checked' })
+        .toArray();
       res.send(result);
     });
 
