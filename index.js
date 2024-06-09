@@ -15,21 +15,6 @@ app.use(
 app.use(express.json());
 
 // custom middlewares
-const verifyToken = (req, res, next) => {
-  const token = req.headers.authorization;
-  if (!token) {
-    console.log('token nai');
-    return res.status(401).send({ message: 'Forbidden access' });
-  }
-  jwt.verify(token, process.env.SECRET_ACCESS_TOKEN, (err, decoded) => {
-    if (err) {
-      console.log('err token nai');
-      return res.status(401).send({ message: 'Forbidden access' });
-    }
-    req.decoded = decoded;
-    next();
-  });
-};
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.2fh4pkj.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
@@ -67,6 +52,33 @@ async function run() {
       res.send({ token });
     });
 
+    const verifyToken = (req, res, next) => {
+      const token = req.headers.authorization;
+      if (!token) {
+        console.log('token nai');
+        return res.status(401).send({ message: 'Forbidden access' });
+      }
+      jwt.verify(token, process.env.SECRET_ACCESS_TOKEN, (err, decoded) => {
+        if (err) {
+          console.log('err token nai');
+          return res.status(401).send({ message: 'Forbidden access' });
+        }
+        req.decoded = decoded;
+        next();
+      });
+    };
+
+    const verifyAdmin = async (req, res, next) => {
+      const email = req.decoded.email;
+      const query = { email: email };
+      const user = await userCollection.findOne(query);
+      const isAdmin = user?.role === 'admin';
+      if (!isAdmin) {
+        return res.status(403).send({ message: 'forbidden access' });
+      }
+      next();
+    };
+
     // users related api
 
     app.post('/users', async (req, res) => {
@@ -85,7 +97,7 @@ async function run() {
       res.send(result);
     });
 
-    app.get('/members', verifyToken, async (req, res) => {
+    app.get('/members', verifyToken, verifyAdmin, async (req, res) => {
       const result = await userCollection.find({ role: 'member' }).toArray();
       res.send(result);
     });
@@ -149,7 +161,7 @@ async function run() {
       res.send({ count });
     });
 
-    app.get('/agreement', verifyToken, async (req, res) => {
+    app.get('/agreement', verifyToken, verifyAdmin, async (req, res) => {
       const result = await agreementCollection.find().toArray();
       res.send(result);
     });
@@ -175,41 +187,46 @@ async function run() {
       res.send(result);
     });
 
-    app.patch('/agreement/checking/:id', verifyToken, async (req, res) => {
-      const id = req.params.id;
-      const accept_date = req.body;
-      const filter = { _id: new ObjectId(id) };
-      const updatedDoc = {
-        $set: {
-          accept_date: accept_date.currentDate,
-          status: 'checked',
-        },
-      };
-      const result = await agreementCollection.updateOne(filter, updatedDoc);
-      if (req.query.check === 'approve') {
-        const filterUser = { email: req.query.email };
-        const filterApartment = { _id: new ObjectId(req.query.apartmentId) };
-        const userUpdatedDoc = {
+    app.patch(
+      '/agreement/checking/:id',
+      verifyToken,
+      verifyAdmin,
+      async (req, res) => {
+        const id = req.params.id;
+        const accept_date = req.body;
+        const filter = { _id: new ObjectId(id) };
+        const updatedDoc = {
           $set: {
-            role: 'member',
+            accept_date: accept_date.currentDate,
+            status: 'checked',
           },
         };
-        const apartmentUpdatedDoc = {
-          $set: {
-            status: 'unavailable',
-          },
-        };
-        const userResult = await userCollection.updateOne(
-          filterUser,
-          userUpdatedDoc
-        );
-        const apartmentResult = await apartmentCollection.updateOne(
-          filterApartment,
-          apartmentUpdatedDoc
-        );
+        const result = await agreementCollection.updateOne(filter, updatedDoc);
+        if (req.query.check === 'approve') {
+          const filterUser = { email: req.query.email };
+          const filterApartment = { _id: new ObjectId(req.query.apartmentId) };
+          const userUpdatedDoc = {
+            $set: {
+              role: 'member',
+            },
+          };
+          const apartmentUpdatedDoc = {
+            $set: {
+              status: 'unavailable',
+            },
+          };
+          const userResult = await userCollection.updateOne(
+            filterUser,
+            userUpdatedDoc
+          );
+          const apartmentResult = await apartmentCollection.updateOne(
+            filterApartment,
+            apartmentUpdatedDoc
+          );
+        }
+        res.send(result);
       }
-      res.send(result);
-    });
+    );
 
     app.get('/apartmentChecked', async (req, res) => {
       const result = await agreementCollection
@@ -220,7 +237,7 @@ async function run() {
 
     // announcement related api
 
-    app.post('/announcement', verifyToken, async (req, res) => {
+    app.post('/announcement', verifyToken, verifyAdmin, async (req, res) => {
       const data = req.body;
       const result = await announcementCollection.insertOne(data);
       res.send(result);
@@ -238,7 +255,7 @@ async function run() {
       res.send(result);
     });
 
-    app.post('/coupons', verifyToken, async (req, res) => {
+    app.post('/coupons', verifyToken, verifyAdmin, async (req, res) => {
       const data = req.body;
       const result = await couponCollection.insertOne(data);
       res.send(result);
