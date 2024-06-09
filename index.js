@@ -135,8 +135,18 @@ async function run() {
     // apartment related api
 
     app.get('/apartment', async (req, res) => {
-      const result = await apartmentCollection.find().toArray();
+      const page = parseInt(req.query.page);
+      const size = parseInt(req.query.size);
+      const result = await apartmentCollection
+        .find()
+        .skip(size * (page - 1))
+        .limit(size)
+        .toArray();
       res.send(result);
+    });
+    app.get('/apartmentCount', async (req, res) => {
+      const count = await apartmentCollection.estimatedDocumentCount();
+      res.send({ count });
     });
 
     app.get('/agreement', verifyToken, async (req, res) => {
@@ -234,7 +244,7 @@ async function run() {
       res.send(result);
     });
 
-    // payment intend
+    // payment intend & payment related api
 
     app.post('/create-payment-intent', verifyToken, async (req, res) => {
       const { price } = req.body;
@@ -252,7 +262,14 @@ async function run() {
 
     app.get('/payments/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
-      const result = await paymentCollection.find({ email }).toArray();
+      const search = req.query.search;
+      const query = { email };
+      if (search) {
+        query.month = { $regex: search, $options: 'i' };
+        console.log(query);
+      }
+      console.log(search);
+      const result = await paymentCollection.find(query).toArray();
       res.send(result);
     });
 
