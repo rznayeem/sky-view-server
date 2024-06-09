@@ -9,7 +9,11 @@ const port = process.env.PORT || 5000;
 // middlewares
 app.use(
   cors({
-    origin: ['http://localhost:5173', 'http://localhost:5000'],
+    origin: [
+      'http://localhost:5173',
+      'http://localhost:5000',
+      'https://sky-view-5263b.web.app',
+    ],
   })
 );
 app.use(express.json());
@@ -156,9 +160,17 @@ async function run() {
         .toArray();
       res.send(result);
     });
+
     app.get('/apartmentCount', async (req, res) => {
       const count = await apartmentCollection.estimatedDocumentCount();
       res.send({ count });
+    });
+
+    app.get('/unAvailableApartment', async (req, res) => {
+      const unavailableRooms = await apartmentCollection.countDocuments({
+        status: 'unavailable',
+      });
+      res.send({ unavailableRooms });
     });
 
     app.get('/agreement', verifyToken, verifyAdmin, async (req, res) => {
@@ -227,13 +239,6 @@ async function run() {
         res.send(result);
       }
     );
-
-    app.get('/apartmentChecked', async (req, res) => {
-      const result = await agreementCollection
-        .find({ status: 'checked' })
-        .toArray();
-      res.send(result);
-    });
 
     // announcement related api
 
